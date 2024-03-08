@@ -18,7 +18,7 @@ def shear(x, scale=10):
 
 def translate(x, max_translation):
     k = np.random.choice(max_translation)
-    return np.concatenate([x[-k:], x[:-k]])
+    return np.concatenate([x[-k:], x[:-k]]), k
 
 def corr_noise_like(x, scale):
     noise = scale * np.random.randn(*x.shape)
@@ -39,7 +39,8 @@ def transform(x, y, args, eps=1e-8):
     new_x = interpolate(new_x, args.template_len + args.padding[-1])  # dilate
     new_y = interpolate(y, args.template_len + args.padding[-1])
     new_x *= (1 + args.scale_coeff*(np.random.rand() - 0.5))  # scale
-    new_x = translate(new_x, args.max_translation)  #translate
+    new_x, k = translate(new_x, args.max_translation)  # translate
+    k *= args.final_seq_length/72  # rescale start idx
     
     # add noise
     mask = new_x != 0
@@ -50,4 +51,4 @@ def transform(x, y, args, eps=1e-8):
     new_x = shear(new_x, args.shear_scale)
     new_x = interpolate(new_x, args.final_seq_length) # subsample
     new_y = interpolate(new_y, args.final_seq_length)
-    return new_x, new_y
+    return new_x, new_y, k

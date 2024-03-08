@@ -60,9 +60,29 @@ def make_dataset(args=None, template=None, ):
             x = templates['x'][label_ix]
             t = templates['t']
             y = templates['y'][label_ix]
-            x, new_t = transform(x, t, args) # new_t transformation is same each time
-            xs.append(x) ; ys.append(y)
-    
+            x, new_t, k = transform(x, t, args) # new_t transformation is same each time
+            k = int(k)
+            # k is idx where the actual pattern starts
+
+            # overwrite target labels y with target activations
+            # generate target activations being 1 for the correct class
+            # from k until k+final_seq_length//4  and 0 for the others
+            z = np.zeros((args.final_seq_length, 10))
+            z[k:k+args.final_seq_length//4, y] = 1
+            # restore the original target labels
+            # z[:, y] = 1
+
+            # same but with additional noise label
+            # z = np.zeros((args.final_seq_length, 11))
+            # z[k:k+args.final_seq_length//4, y] = 1
+            # # set to 1 where z[y] is 0 and vice versa
+            # z[:, 10] = 1 - z[:, y]
+
+            # append either y or z
+            # y is the target label
+            # z is the target activations
+            xs.append(x) ; ys.append(z)
+
     batch_shuffle = np.random.permutation(len(ys)) # shuffle batch dimension
     xs = np.stack(xs)[batch_shuffle]
     ys = np.stack(ys)[batch_shuffle]
@@ -78,7 +98,7 @@ def make_dataset(args=None, template=None, ):
     split_ix = int(len(ys)*args.train_split)
     dataset = {'x': xs[:split_ix], 'x_test': xs[split_ix:],
                'y': ys[:split_ix], 'y_test': ys[split_ix:],
-               't':new_t, 'templates': templates}
+               't': new_t, 'templates': templates}
     return dataset
 
 

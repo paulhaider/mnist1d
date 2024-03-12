@@ -19,6 +19,7 @@ def get_dataset_args(as_dict=False):
             'shear_scale': 0.75,
             'shuffle_seq': False,
             'final_seq_length': 40,
+            'target_type': 'label',  # 'label' or 'activation
             'seed': 42,
             'url': 'https://github.com/greydanus/mnist1d/raw/master/mnist1d_data.pkl'}
     return arg_dict if as_dict else ObjectView(arg_dict)
@@ -48,7 +49,7 @@ def get_templates():
 
 
 # make a dataset
-def make_dataset(args=None, template=None, ):
+def make_dataset(args=None, template=None):
     templates = get_templates() if template is None else template
     args = get_dataset_args() if args is None else args
     np.random.seed(args.seed) # reproducibility
@@ -81,7 +82,12 @@ def make_dataset(args=None, template=None, ):
             # append either y or z
             # y is the target label
             # z is the target activations
-            xs.append(x) ; ys.append(z)
+            if args.target_type == 'label':
+                xs.append(x) ; ys.append(y)
+            elif args.target_type == 'activation':
+                xs.append(x) ; ys.append(z)
+            else:
+                raise ValueError("target_type must be 'label' or 'activation'")
 
     batch_shuffle = np.random.permutation(len(ys)) # shuffle batch dimension
     xs = np.stack(xs)[batch_shuffle]
